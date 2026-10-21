@@ -67,21 +67,39 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 });
 
-// تطبيق إعدادات شكل الموقع والعناوين وترتيب المشاكل
+// تطبيق إعدادات شكل الموقع والعناوين وترتيب المشاكل واللغة
 function applySiteSettingsUI() {
+    const isEn = siteConfig.appLang === "en";
+    document.documentElement.lang = isEn ? "en" : "ar";
+    document.documentElement.dir = isEn ? "ltr" : "rtl";
+
     // 1. Theme
     const body = document.getElementById("page-body");
     body.classList.remove("theme-dark", "theme-light", "theme-black");
     body.classList.add(`theme-${siteConfig.theme || 'dark'}`);
 
-    // 2. Texts & Labels
-    document.getElementById("label-issues-heading").textContent = siteConfig.issuesLabel || DEFAULT_SITE_SETTINGS.issuesLabel;
-    document.getElementById("label-note-heading").textContent = siteConfig.noteLabel || DEFAULT_SITE_SETTINGS.noteLabel;
-    document.getElementById("report-note").placeholder = siteConfig.notePlaceholder || DEFAULT_SITE_SETTINGS.notePlaceholder;
-    document.getElementById("label-phone-heading").textContent = siteConfig.phoneLabel || DEFAULT_SITE_SETTINGS.phoneLabel;
-    document.getElementById("btn-text").textContent = siteConfig.submitBtnText || DEFAULT_SITE_SETTINGS.submitBtnText;
-    document.getElementById("success-title-label").textContent = siteConfig.successTitle || DEFAULT_SITE_SETTINGS.successTitle;
-    document.getElementById("success-msg-label").textContent = siteConfig.successMessage || DEFAULT_SITE_SETTINGS.successMessage;
+    // 2. Texts & Labels (Supporting English mode automatically)
+    document.getElementById("label-issues-heading").textContent = isEn && (!siteConfig.issuesLabel || siteConfig.issuesLabel === DEFAULT_SITE_SETTINGS.issuesLabel)
+        ? "What issue did you notice? (Select one or more)"
+        : (siteConfig.issuesLabel || DEFAULT_SITE_SETTINGS.issuesLabel);
+    document.getElementById("label-note-heading").textContent = isEn && (!siteConfig.noteLabel || siteConfig.noteLabel === DEFAULT_SITE_SETTINGS.noteLabel)
+        ? "Additional details (optional):"
+        : (siteConfig.noteLabel || DEFAULT_SITE_SETTINGS.noteLabel);
+    document.getElementById("report-note").placeholder = isEn && (!siteConfig.notePlaceholder || siteConfig.notePlaceholder === DEFAULT_SITE_SETTINGS.notePlaceholder)
+        ? "Example: Rear right window is open, or I am waiting next to the car..."
+        : (siteConfig.notePlaceholder || DEFAULT_SITE_SETTINGS.notePlaceholder);
+    document.getElementById("label-phone-heading").textContent = isEn && (!siteConfig.phoneLabel || siteConfig.phoneLabel === DEFAULT_SITE_SETTINGS.phoneLabel)
+        ? "Your phone number (optional, if you'd like the owner to contact you):"
+        : (siteConfig.phoneLabel || DEFAULT_SITE_SETTINGS.phoneLabel);
+    document.getElementById("btn-text").textContent = isEn && (!siteConfig.submitBtnText || siteConfig.submitBtnText === DEFAULT_SITE_SETTINGS.submitBtnText)
+        ? "Send Alert to Car Owner"
+        : (siteConfig.submitBtnText || DEFAULT_SITE_SETTINGS.submitBtnText);
+    document.getElementById("success-title-label").textContent = isEn && (!siteConfig.successTitle || siteConfig.successTitle === DEFAULT_SITE_SETTINGS.successTitle)
+        ? "Alert Sent Successfully!"
+        : (siteConfig.successTitle || DEFAULT_SITE_SETTINGS.successTitle);
+    document.getElementById("success-msg-label").textContent = isEn && (!siteConfig.successMessage || siteConfig.successMessage === DEFAULT_SITE_SETTINGS.successMessage)
+        ? "Your alert has been delivered to the car owner's mobile app immediately. Thank you for helping out!"
+        : (siteConfig.successMessage || DEFAULT_SITE_SETTINGS.successMessage);
 
     // 3. Show/Hide optional fields
     document.getElementById("note-field-wrapper").style.display = (siteConfig.showNoteField === false) ? "none" : "block";
@@ -90,20 +108,32 @@ function applySiteSettingsUI() {
     // 4. Issues Grid Layout & Ordering
     const grid = document.getElementById("issues-grid-container");
     const cols = Number(siteConfig.gridColumns) === 1 ? "grid-cols-1" : "grid-cols-2";
-    grid.className = `grid ${cols} gap-2.5 text-right`;
+    grid.className = `grid ${cols} gap-2.5 ${isEn ? 'text-left' : 'text-right'}`;
+
+    const enIssueMap = {
+        "iss_1": "Blocking / Double Parked",
+        "iss_2": "Car Window Open",
+        "iss_3": "Headlights Left On",
+        "iss_4": "Flat / Low Tire",
+        "iss_5": "Car Alarm Ringing",
+        "iss_6": "Accident / Scratched"
+    };
 
     const issues = siteConfig.issuesList || DEFAULT_SITE_SETTINGS.issuesList;
     grid.innerHTML = issues.map(item => {
         const isActive = selectedIssues.includes(item.value);
         const isRow = Number(siteConfig.gridColumns) === 1;
         const iconColor = item.color || "#10B981";
+        const displayLabel = (isEn && enIssueMap[item.id] && item.label === (DEFAULT_SITE_SETTINGS.issuesList.find(d => d.id === item.id) || {}).label)
+            ? enIssueMap[item.id]
+            : item.label;
         const safeValue = (item.value || item.label).replace(/'/g, "\\'");
         return `
-            <button type="button" onclick="toggleIssue(this, '${safeValue}')" class="issue-btn ${isActive ? 'active' : ''} p-3.5 rounded-2xl bg-slate-900/60 border border-slate-700/80 hover:border-emerald-500 transition-all flex ${isRow ? 'flex-row items-center gap-3' : 'flex-col items-start gap-2'} text-right">
+            <button type="button" onclick="toggleIssue(this, '${safeValue}')" class="issue-btn ${isActive ? 'active' : ''} p-3.5 rounded-2xl bg-slate-900/60 border border-slate-700/80 hover:border-emerald-500 transition-all flex ${isRow ? 'flex-row items-center gap-3' : 'flex-col items-start gap-2'} ${isEn ? 'text-left' : 'text-right'}">
                 <span style="background-color: ${iconColor}20; color: ${iconColor};" class="w-9 h-9 rounded-xl flex items-center justify-center text-sm flex-shrink-0">
                     <i class="fa-solid ${item.icon || 'fa-circle-exclamation'}"></i>
                 </span>
-                <span class="issue-label text-xs font-bold opacity-95">${item.label}</span>
+                <span class="issue-label text-xs font-bold opacity-95">${displayLabel}</span>
             </button>
         `;
     }).join('');

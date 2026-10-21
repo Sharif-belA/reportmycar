@@ -1,5 +1,5 @@
 // Service Worker for Car Owner App (PWA) with Background Web Push Support
-const CACHE_NAME = 'car-alert-unified-v1';
+const CACHE_NAME = 'car-alert-unified-v2';
 const ASSETS = [
   './',
   './index.html',

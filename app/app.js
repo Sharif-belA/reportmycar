@@ -193,10 +193,11 @@ function initApp() {
         renderReportsList();
     });
 
-    // 2. Subscribe to Site Settings (Theme, Titles, Issues Order)
+    // 2. Subscribe to Site Settings (Theme, Titles, Issues Order, Language, App Branding)
     unsubSettings = subscribeToSiteSettings((settings) => {
         siteSettings = JSON.parse(JSON.stringify(settings));
         populateSiteCustomizerUI();
+        syncBrandingAndLangFromSettings(siteSettings);
     });
 
     // 3. Subscribe to Reports list in real-time
@@ -1499,7 +1500,360 @@ function loadSettings() {
     if (input) {
         input.value = savedUrl || window.location.origin;
     }
+    initAppBrandingAndLanguage();
     loadPushConfigUI();
+}
+
+// =========================================================================
+// LANGUAGE SWITCHER (العربية / English) & APP BRANDING (اسم وأيقونة البرنامج)
+// =========================================================================
+let currentAppLang = localStorage.getItem("owner_app_lang") || "ar";
+let appBranding = JSON.parse(localStorage.getItem("owner_app_branding") || "null") || {
+    name: "تنبيهات سيارتي",
+    icon: "fa-car-side",
+    color: "#10B981",
+    customImage: null
+};
+
+const OWNER_I18N = {
+    ar: {
+        dir: "rtl",
+        test_report_btn: "تجربة بلاغ",
+        connection_live: "متصل لحظياً",
+        stat_total_label: "إجمالي البلاغات",
+        stat_new_label: "جديدة",
+        stat_resolved_label: "تم حلها",
+        filter_all: "الكل",
+        filter_new: "جديدة 🔴",
+        filter_resolved: "تم الحل ✅",
+        empty_title: "لا توجد بلاغات هنا",
+        empty_sub: "سياراتك بأمان! أي تنبيه يسجله شخص في الشارع لأي سيارة سيظهر هنا فوراً.",
+        cars_tab_title: "سياراتي والباركود",
+        cars_tab_sub: "تحكم في صورة السيارة، شكلها، لونها، والـ ID العشوائي",
+        add_car_btn: "سيارة جديدة",
+        cust_tab_title: "التحكم في شكل ومحتوى موقع الناس",
+        cust_tab_sub: "أي تعديل تحفظه هنا يتغير فوراً على موقع الشارع",
+        save_all_btn: "حفظ الكل",
+        settings_title: "إعدادات التطبيق",
+        lang_setting_title: "لغة البرنامج والموقع (Language)",
+        lang_setting_sub: "التبديل بين العربية والإنجليزية",
+        app_branding_title: "تغيير اسم وأيقونة البرنامج",
+        app_preview_label: "معاينة شكل البرنامج:",
+        app_name_label: "اسم البرنامج:",
+        app_icon_label: "اختيار شكل الأيقونة أو رفع صورة خاصة:",
+        upload_custom_icon: "رفع صورة أيقونة",
+        save_app_branding_btn: "حفظ اسم وأيقونة البرنامج",
+        nav_reports: "البلاغات",
+        nav_cars: "سياراتي",
+        nav_customizer: "شكل الموقع",
+        nav_settings: "الإعدادات"
+    },
+    en: {
+        dir: "ltr",
+        test_report_btn: "Test Alert",
+        connection_live: "Live Connected",
+        stat_total_label: "Total Reports",
+        stat_new_label: "New",
+        stat_resolved_label: "Resolved",
+        filter_all: "All",
+        filter_new: "New 🔴",
+        filter_resolved: "Resolved ✅",
+        empty_title: "No Reports Yet",
+        empty_sub: "Your cars are safe! Any street alert submitted for your cars will appear here instantly.",
+        cars_tab_title: "My Cars & QR Stickers",
+        cars_tab_sub: "Manage car photo, icon shape, color theme, and 8-char ID",
+        add_car_btn: "New Car",
+        cust_tab_title: "Customize Public Street Website",
+        cust_tab_sub: "Any changes saved here update the street website immediately",
+        save_all_btn: "Save All",
+        settings_title: "App Settings",
+        lang_setting_title: "App & Website Language",
+        lang_setting_sub: "Switch between Arabic and English",
+        app_branding_title: "Customize App Name & Icon",
+        app_preview_label: "App Header & Icon Preview:",
+        app_name_label: "App Name:",
+        app_icon_label: "Choose Icon Shape or Upload Custom Image:",
+        upload_custom_icon: "Upload Icon",
+        save_app_branding_btn: "Save App Name & Icon",
+        nav_reports: "Reports",
+        nav_cars: "My Cars",
+        nav_customizer: "Site Design",
+        nav_settings: "Settings"
+    }
+};
+
+function initAppBrandingAndLanguage() {
+    const nameInput = document.getElementById("setting-app-name");
+    if (nameInput) nameInput.value = appBranding.name || "تنبيهات سيارتي";
+    const colorInput = document.getElementById("setting-app-icon-color");
+    if (colorInput) colorInput.value = appBranding.color || "#10B981";
+
+    updateAppBrandingPreview();
+    applyAppBrandingToDOM();
+    applyAppLanguageUI(currentAppLang);
+}
+
+function syncBrandingAndLangFromSettings(settings) {
+    if (!settings) return;
+    let changedBranding = false;
+    if (settings.appName && settings.appName !== appBranding.name) {
+        appBranding.name = settings.appName;
+        changedBranding = true;
+    }
+    if (settings.appIcon && settings.appIcon !== appBranding.icon) {
+        appBranding.icon = settings.appIcon;
+        changedBranding = true;
+    }
+    if (settings.appIconColor && settings.appIconColor !== appBranding.color) {
+        appBranding.color = settings.appIconColor;
+        changedBranding = true;
+    }
+    if (settings.appCustomIcon !== undefined && settings.appCustomIcon !== appBranding.customImage) {
+        appBranding.customImage = settings.appCustomIcon;
+        changedBranding = true;
+    }
+    if (changedBranding) {
+        localStorage.setItem("owner_app_branding", JSON.stringify(appBranding));
+        const nameInput = document.getElementById("setting-app-name");
+        if (nameInput) nameInput.value = appBranding.name;
+        updateAppBrandingPreview();
+        applyAppBrandingToDOM();
+    }
+    if (settings.appLang && settings.appLang !== currentAppLang) {
+        currentAppLang = settings.appLang;
+        localStorage.setItem("owner_app_lang", currentAppLang);
+        applyAppLanguageUI(currentAppLang);
+    }
+}
+
+async function setAppLanguage(lang) {
+    currentAppLang = (lang === "en") ? "en" : "ar";
+    localStorage.setItem("owner_app_lang", currentAppLang);
+    applyAppLanguageUI(currentAppLang);
+
+    siteSettings.appLang = currentAppLang;
+    try {
+        await saveSiteSettingsData({ appLang: currentAppLang });
+    } catch (e) {}
+}
+
+function toggleAppLanguage() {
+    setAppLanguage(currentAppLang === "ar" ? "en" : "ar");
+}
+
+function applyAppLanguageUI(lang) {
+    const dict = OWNER_I18N[lang] || OWNER_I18N.ar;
+    document.documentElement.lang = lang;
+    document.documentElement.dir = dict.dir;
+
+    const headerLangBtn = document.getElementById("header-lang-btn");
+    if (headerLangBtn) headerLangBtn.textContent = lang === "ar" ? "EN" : "عربي";
+
+    const btnAr = document.getElementById("btn-lang-ar");
+    const btnEn = document.getElementById("btn-lang-en");
+    if (btnAr && btnEn) {
+        if (lang === "ar") {
+            btnAr.className = "py-2 rounded-xl border border-emerald-500 bg-emerald-500/15 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all";
+            btnEn.className = "py-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-all";
+        } else {
+            btnEn.className = "py-2 rounded-xl border border-emerald-500 bg-emerald-500/15 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all";
+            btnAr.className = "py-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-all";
+        }
+    }
+
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+        const key = el.getAttribute("data-i18n");
+        if (dict[key]) el.textContent = dict[key];
+    });
+
+    // Translate bottom navigation labels
+    const navMap = {
+        "nav-tab-reports": dict.nav_reports,
+        "nav-tab-cars": dict.nav_cars,
+        "nav-tab-customizer": dict.nav_customizer,
+        "nav-tab-settings": dict.nav_settings
+    };
+    Object.keys(navMap).forEach(id => {
+        const span = document.querySelector(`#${id} span`);
+        if (span) span.textContent = navMap[id];
+    });
+
+    renderCarFilterBar();
+    renderReportsList();
+    renderCarsManagementTab();
+}
+
+function selectAppBrandingIcon(iconName) {
+    appBranding.icon = iconName;
+    appBranding.customImage = null;
+    updateAppBrandingPreview();
+}
+
+function selectAppBrandingColor(colorHex) {
+    appBranding.color = colorHex;
+    updateAppBrandingPreview();
+}
+
+function handleCustomAppIconUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement("canvas");
+            canvas.width = 192;
+            canvas.height = 192;
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, 192, 192);
+            // Draw image centered/cover inside 192x192
+            const scale = Math.max(192 / img.width, 192 / img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (192 - w) / 2, (192 - h) / 2, w, h);
+            appBranding.customImage = canvas.toDataURL("image/png");
+            updateAppBrandingPreview();
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function renderAppLogoBoxContent(boxEl, iconSizeClass = "text-base") {
+    if (!boxEl) return;
+    const color = appBranding.color || "#10B981";
+    if (appBranding.customImage) {
+        boxEl.style.background = "transparent";
+        boxEl.innerHTML = `<img src="${appBranding.customImage}" alt="App Icon" class="w-full h-full object-cover">`;
+    } else {
+        boxEl.style.background = color;
+        if (appBranding.icon === "brand-mitsubishi") {
+            boxEl.innerHTML = `<svg class="w-5 h-5 fill-current text-white" viewBox="0 0 200 180"><polygon points="100,11 130,63 100,115 70,63"/><polygon points="100,115 40,115 10,167 70,167"/><polygon points="100,115 160,115 190,167 130,167"/></svg>`;
+        } else {
+            boxEl.innerHTML = `<i class="fa-solid ${appBranding.icon || 'fa-car-side'} text-white ${iconSizeClass}"></i>`;
+        }
+    }
+}
+
+function updateAppBrandingPreview() {
+    const nameInput = document.getElementById("setting-app-name");
+    const currentName = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : (appBranding.name || "تنبيهات سيارتي");
+    appBranding.name = currentName;
+
+    const previewName = document.getElementById("preview-app-name-text");
+    if (previewName) previewName.textContent = currentName;
+
+    const previewBox = document.getElementById("preview-app-icon-box");
+    renderAppLogoBoxContent(previewBox, "text-xl");
+
+    document.querySelectorAll(".app-icon-opt").forEach(btn => {
+        const i = btn.querySelector("i");
+        const isMitsu = !i && btn.querySelector("svg");
+        const matched = !appBranding.customImage && ((appBranding.icon === "brand-mitsubishi" && isMitsu) || (i && i.classList.contains(appBranding.icon)));
+        if (matched) {
+            btn.className = "app-icon-opt p-2 rounded-xl bg-slate-900 border border-emerald-500 text-white text-sm flex items-center justify-center";
+        } else {
+            btn.className = "app-icon-opt p-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm flex items-center justify-center";
+        }
+    });
+}
+
+function generateDynamicAppIconDataUrl(size = 192) {
+    if (appBranding.customImage) return appBranding.customImage;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    const color = appBranding.color || "#10B981";
+
+    // Rounded background
+    const r = size * 0.22;
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.lineTo(size - r, 0);
+    ctx.quadraticCurveTo(size, 0, size, r);
+    ctx.lineTo(size, size - r);
+    ctx.quadraticCurveTo(size, size, size - r, size);
+    ctx.lineTo(r, size);
+    ctx.quadraticCurveTo(0, size, 0, size - r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    // Inner symbol
+    ctx.fillStyle = "#FFFFFF";
+    if (appBranding.icon === "brand-mitsubishi") {
+        const scale = (size * 0.65) / 200;
+        const ox = size * 0.175;
+        const oy = size * 0.20;
+        const drawP = (pts) => {
+            ctx.beginPath();
+            pts.forEach((p, idx) => {
+                if (idx === 0) ctx.moveTo(ox + p[0] * scale, oy + p[1] * scale);
+                else ctx.lineTo(ox + p[0] * scale, oy + p[1] * scale);
+            });
+            ctx.closePath();
+            ctx.fill();
+        };
+        drawP([[100, 11], [130, 63], [100, 115], [70, 63]]);
+        drawP([[100, 115], [40, 115], [10, 167], [70, 167]]);
+        drawP([[100, 115], [160, 115], [190, 167], [130, 167]]);
+    } else {
+        ctx.font = `900 ${Math.round(size * 0.42)}px 'Cairo', sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText((appBranding.name || "🚗").slice(0, 2), size / 2, size / 2);
+    }
+    return canvas.toDataURL("image/png");
+}
+
+function applyAppBrandingToDOM() {
+    const titleText = appBranding.name || "تنبيهات سيارتي";
+    const headerTitle = document.getElementById("header-app-title");
+    if (headerTitle) headerTitle.textContent = titleText;
+
+    const docTitle = document.getElementById("doc-app-title");
+    if (docTitle) docTitle.textContent = titleText;
+    document.title = titleText;
+
+    const appleTitle = document.getElementById("meta-apple-title");
+    if (appleTitle) appleTitle.setAttribute("content", titleText);
+
+    const headerLogoBox = document.getElementById("header-app-logo-box");
+    renderAppLogoBoxContent(headerLogoBox, "text-sm");
+
+    try {
+        const icon192 = generateDynamicAppIconDataUrl(192);
+        const favicon = document.getElementById("dynamic-favicon");
+        const appleIcon = document.getElementById("dynamic-apple-icon");
+        if (favicon) favicon.href = icon192;
+        if (appleIcon) appleIcon.href = icon192;
+    } catch (e) {}
+}
+
+async function saveAppBrandingSettings() {
+    updateAppBrandingPreview();
+    localStorage.setItem("owner_app_branding", JSON.stringify(appBranding));
+    applyAppBrandingToDOM();
+
+    siteSettings.appName = appBranding.name;
+    siteSettings.appIcon = appBranding.icon;
+    siteSettings.appIconColor = appBranding.color;
+    siteSettings.appCustomIcon = appBranding.customImage || null;
+
+    await saveSiteSettingsData({
+        appName: appBranding.name,
+        appIcon: appBranding.icon,
+        appIconColor: appBranding.color,
+        appCustomIcon: appBranding.customImage || null
+    });
+
+    alert(currentAppLang === "en"
+        ? "✅ App name and icon updated successfully!"
+        : "✅ تم حفظ وتحديث اسم وأيقونة البرنامج بنجاح!");
 }
 
 async function loadPushConfigUI() {
