@@ -1,0 +1,59 @@
+/* Owner App Styles */
+
+body {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.filter-chip.active {
+    background-color: #10B981 !important;
+    color: #022c22 !important;
+}
+
+.bottom-nav-btn.active {
+    color: #10B981 !important;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Print Rules - Prints only the QR sticker cleanly matching the exact layout */
+@media print {
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+    header, nav, main, #detail-modal, #car-edit-modal, .no-print {
+        display: none !important;
+    }
+    #qr-sticker-modal {
+        display: flex !important;
+        position: static !important;
+        background: transparent !important;
+        padding: 0 !important;
+    }
+    #qr-sticker-modal > div {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    #owner-sticker-card {
+        border: 12px solid #848688 !important;
+        border-radius: 52px !important;
+        margin: 20px auto !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    #sticker-qr-frame, #sticker-title-belaghni, #sticker-car-visual-box {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}

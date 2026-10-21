@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title id="page-doc-title">تنبيه مالك السيارة</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { cairo: ['Cairo', 'sans-serif'] },
+                    colors: { primary: '#10B981', brandDark: '#0F172A' }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body id="page-body" class="theme-dark bg-slate-900 text-slate-100 font-cairo min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white p-4 sm:p-6 transition-colors duration-300">
+
+    <div class="max-w-md w-full mx-auto my-auto">
+        
+        <!-- Top Hero Section (Hidden until a valid Car ID is loaded from QR) -->
+        <header id="car-hero-header" class="hidden text-center mb-6 pt-2">
+            <!-- Car Photo (Large & Floating cleanly like the mockup) -->
+            <div id="header-car-photo-wrapper" class="hidden mx-auto mb-3 max-w-[290px] sm:max-w-[330px]">
+                <img id="header-car-photo" src="" alt="صورة العربية" class="w-full max-h-48 object-contain mx-auto drop-shadow-[0_15px_25px_rgba(0,0,0,0.6)]">
+            </div>
+
+            <!-- Fallback Vector Car Icon (Shown only if no photo is uploaded yet) -->
+            <div id="header-car-icon-box" style="background-color: #10B981; box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);" class="inline-flex items-center justify-center w-20 h-20 rounded-3xl text-slate-950 text-4xl mb-3 transition-all duration-300">
+                <i id="header-car-icon" class="fa-solid fa-car-side"></i>
+            </div>
+
+            <!-- 3 Lines: اسم نوع العربية / رقم العربية / لونها -->
+            <div class="space-y-1.5">
+                <h1 id="car-name-label" class="text-2xl sm:text-3xl font-extrabold tracking-tight">اسم نوع العربية</h1>
+                <div id="car-plate-label" class="text-xl sm:text-2xl font-bold font-mono tracking-wide">رقم العربية</div>
+                <div id="car-color-name-label" class="text-lg sm:text-xl font-semibold opacity-90">لونها</div>
+            </div>
+
+            <!-- Optional Subtitle (Hidden if empty) -->
+            <p id="car-subtitle-label" class="hidden text-xs opacity-70 mt-2"></p>
+        </header>
+
+        <!-- QR Code Required / Invalid ID Screen -->
+        <div id="qr-required-screen" class="card-surface bg-slate-800/90 border border-slate-700/80 rounded-3xl p-7 text-center shadow-2xl backdrop-blur-sm animate-fade-in">
+            <div class="w-16 h-16 rounded-3xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-3xl flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-qrcode"></i>
+            </div>
+            <h2 id="qr-required-title" class="text-lg font-black mb-2">يرجى مسح كود الـ QR الخاص بالسيارة</h2>
+            <p id="qr-required-msg" class="text-xs opacity-80 leading-relaxed">
+                للحفاظ على الخصوصية، لا يمكن عرض بيانات السيارة أو إرسال بلاغ إلا من خلال مسح استيكر الـ QR Code الموجود على زجاج السيارة مباشرة.
+            </p>
+        </div>
+
+        <!-- Main Form Container (Hidden until a valid Car ID is loaded from QR) -->
+        <main id="report-form-container" class="hidden card-surface bg-slate-800/80 border border-slate-700/70 rounded-3xl p-5 shadow-2xl backdrop-blur-sm transition-colors duration-300">
+            
+            <!-- Dynamic Issue Selection -->
+            <div class="space-y-3 mb-5">
+                <label class="block text-xs sm:text-sm font-bold opacity-95 text-right">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-400 ml-1"></i>
+                    <span id="label-issues-heading">ما هي المشكلة التي لاحظتها؟ (اختر واحداً أو أكثر)</span>
+                </label>
+
+                <div id="issues-grid-container" class="grid grid-cols-2 gap-2.5 text-right">
+                    <!-- Populated dynamically in the order configured by the owner -->
+                </div>
+            </div>
+
+            <!-- Additional Details -->
+            <div id="note-field-wrapper" class="mb-4">
+                <label for="report-note" class="block text-xs font-bold opacity-90 mb-1.5 text-right">
+                    <i class="fa-regular fa-comment-dots text-emerald-400 ml-1"></i>
+                    <span id="label-note-heading">تفاصيل إضافية عن المشكلة (اختياري):</span>
+                </label>
+                <textarea id="report-note" rows="2" placeholder="مثال: الشباك الخلفي اليمين، أو أنا منتظر بجانب السيارة..." class="input-surface w-full bg-slate-900/90 border border-slate-700 rounded-2xl px-3.5 py-2.5 text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all"></textarea>
+            </div>
+
+            <!-- Optional Phone -->
+            <div id="phone-field-wrapper" class="mb-5">
+                <label for="reporter-phone" class="block text-xs font-bold opacity-90 mb-1.5 text-right">
+                    <i class="fa-solid fa-phone opacity-70 ml-1"></i>
+                    <span id="label-phone-heading">رقم هاتفك للتواصل (اختياري لو تحب المالك يتواصل معك):</span>
+                </label>
+                <input type="tel" id="reporter-phone" dir="ltr" placeholder="010xxxxxxxx" class="input-surface w-full bg-slate-900/90 border border-slate-700 rounded-2xl px-3.5 py-2.5 text-xs text-right placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono transition-all">
+            </div>
+
+            <!-- Submit Button -->
+            <button type="button" id="submit-btn" onclick="handleReportSubmission()" style="background-color: #10B981;" class="w-full py-3.5 px-5 rounded-2xl hover:opacity-90 text-slate-950 font-black text-sm shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95">
+                <span id="btn-text">إرسال البلاغ لمالك السيارة</span>
+                <i class="fa-solid fa-paper-plane text-xs"></i>
+            </button>
+        </main>
+
+        <!-- Success Screen (Hidden by default) -->
+        <div id="success-screen" class="hidden card-surface bg-slate-800/90 border border-slate-700/80 rounded-3xl p-7 text-center shadow-2xl backdrop-blur-sm animate-fade-in">
+            <div class="w-16 h-16 rounded-3xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-3xl flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h2 id="success-title-label" class="text-xl font-black mb-1">تم إرسال البلاغ بنجاح!</h2>
+            <p id="success-msg-label" class="text-xs opacity-80 leading-relaxed mb-6">
+                وصل تنبيهك إلى تطبيق مالك السيارة فوراً. شكراً جزيلاً لتعاونك وحرصك على مساعدة الآخرين!
+            </p>
+            <button onclick="resetForm()" class="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-bold text-white transition-all">
+                <i class="fa-solid fa-rotate-right ml-1"></i>
+                إرسال بلاغ آخر
+            </button>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-6 text-[11px] opacity-40">
+            <span>نظام تنبيه السيارات الذكي &copy; 2026</span>
+        </footer>
+    </div>
+
+    <!-- Firebase Config & App Logic -->
+    <script src="firebase-keys.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

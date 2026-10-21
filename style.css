@@ -1,0 +1,62 @@
+/* Street Report Styles & Multi-Theme Support */
+
+:root {
+    --car-theme: #10B981;
+    --car-theme-soft: rgba(16, 185, 129, 0.16);
+    --car-theme-glow: rgba(16, 185, 129, 0.28);
+}
+
+.issue-btn.active {
+    border-color: var(--car-theme) !important;
+    background-color: var(--car-theme-soft) !important;
+    box-shadow: 0 0 15px var(--car-theme-glow);
+}
+
+.issue-btn.active .issue-label {
+    color: var(--car-theme) !important;
+    font-weight: 800;
+}
+
+/* Theme: Light (فاتح ناصع) */
+body.theme-light {
+    background-color: #F1F5F9 !important;
+    color: #0F172A !important;
+}
+body.theme-light .card-surface {
+    background-color: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+    color: #0F172A !important;
+    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08) !important;
+}
+body.theme-light .inner-surface,
+body.theme-light .issue-btn,
+body.theme-light .input-surface {
+    background-color: #F8FAFC !important;
+    border-color: #CBD5E1 !important;
+    color: #0F172A !important;
+}
+
+/* Theme: Black AMOLED (أسود ملكي) */
+body.theme-black {
+    background-color: #000000 !important;
+    color: #FAFAFA !important;
+}
+body.theme-black .card-surface {
+    background-color: #09090B !important;
+    border-color: #27272A !important;
+}
+body.theme-black .inner-surface,
+body.theme-black .issue-btn,
+body.theme-black .input-surface {
+    background-color: #121215 !important;
+    border-color: #27272A !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

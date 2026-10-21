@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>تطبيق تنبيه سيارتي - المالك</title>
+    <!-- PWA Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Google Fonts: Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { cairo: ['Cairo', 'sans-serif'] },
+                    colors: { primary: '#10B981', brandDark: '#0F172A' }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- QR Code Generator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 font-cairo min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white pb-24">
+
+    <!-- ============================================== -->
+    <!-- OWNER AUTHENTICATION LOCK SCREEN (شاشة حماية التطبيق بكلمة سر) -->
+    <!-- ============================================== -->
+    <div id="auth-screen" class="fixed inset-0 bg-slate-950 z-[100] flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-4">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 text-3xl mx-auto shadow-lg shadow-emerald-500/20">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-black text-white">دخول مالك السيارة 🔒</h2>
+                <p class="text-[11px] text-slate-400 mt-1">التطبيق محمي بكلمة سر للحفاظ على خصوصية سياراتك وبلاغاتك</p>
+            </div>
+
+            <div id="auth-error-box" class="hidden p-3 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-bold leading-relaxed"></div>
+
+            <form onsubmit="handleOwnerLogin(event)" class="space-y-3 text-right">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">
+                        <i class="fa-solid fa-envelope text-emerald-400 ml-1"></i> البريد الإلكتروني للمالك:
+                    </label>
+                    <input type="email" id="auth-email" required dir="ltr" placeholder="owner@example.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-emerald-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">
+                        <i class="fa-solid fa-key text-emerald-400 ml-1"></i> كلمة المرور (على الأقل 6 خانات):
+                    </label>
+                    <input type="password" id="auth-password" required minlength="6" dir="ltr" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-emerald-500 outline-none">
+                </div>
+
+                <button type="submit" id="btn-auth-login" class="w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-lg transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>تسجيل الدخول للتطبيق</span>
+                </button>
+            </form>
+
+            <div id="auth-first-setup-wrapper" class="pt-2 border-t border-slate-800/80">
+                <p class="text-[10px] text-slate-400 mb-2">هل تفتح التطبيق لأول مرة؟ اكتب إيميلك وباسوردك فوق ثم اضغط:</p>
+                <button type="button" id="btn-auth-register" onclick="handleOwnerRegister()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-400 text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>إنشاء حساب المالك لأول مرة</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top App Bar -->
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 px-4 py-3">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-black shadow-md shadow-emerald-500/20">
+                    <i class="fa-solid fa-car-side"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-black text-white leading-tight">تنبيهات سيارتي</h1>
+                    <div id="connection-badge" class="flex items-center gap-1.5 text-[10px] text-emerald-400 font-medium">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="connection-text">متصل لحظياً</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <!-- Quick Action: Test Alert Sound & Sim -->
+                <button onclick="triggerMockReport()" title="تجربة إرسال بلاغ وهمي" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-300 flex items-center gap-1.5 transition-all">
+                    <i class="fa-solid fa-bolt text-amber-400"></i>
+                    <span>تجربة بلاغ</span>
+                </button>
+                <button onclick="handleOwnerLogout()" title="قفل التطبيق وتسجيل الخروج" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-500/20 border border-slate-700 text-slate-400 hover:text-rose-400 flex items-center justify-center text-xs transition-all">
+                    <i class="fa-solid fa-lock"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Screens Container -->
+    <main class="max-w-md w-full mx-auto px-4 pt-3 flex-grow">
+
+        <!-- Banner 1: One-Click PWA Installation Banner -->
+        <div id="install-banner" class="hidden mb-3 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-3.5 shadow-lg text-white flex items-center justify-between animate-pulse">
+            <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-sm font-black">
+                    <i class="fa-solid fa-download"></i>
+                </span>
+                <div>
+                    <h4 class="text-xs font-black">تثبيت التطبيق على هاتفك</h4>
+                    <p class="text-[10px] opacity-90">ليظهر كأيقونة تطبيق كاملة على الشاشة</p>
+                </div>
+            </div>
+            <button onclick="triggerInstallPWA()" class="px-3 py-1.5 bg-slate-950 text-white rounded-xl text-xs font-black shadow-md hover:bg-slate-900 transition-all flex items-center gap-1">
+                <span>تثبيت</span>
+                <i class="fa-solid fa-arrow-left text-[10px]"></i>
+            </button>
+        </div>
+
+        <!-- Banner 2: Notification Permission Banner -->
+        <div id="notification-banner" class="hidden mb-3 bg-slate-900 border border-amber-500/30 rounded-2xl p-3 shadow-md text-amber-300 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-bell text-amber-400 text-sm animate-bounce"></i>
+                <div>
+                    <h4 class="text-xs font-bold text-white">تفعيل إشعارات الهاتف</h4>
+                    <p class="text-[10px] text-slate-400">ليصلك إشعار فوري عند إرسال أي بلاغ</p>
+                </div>
+            </div>
+            <button onclick="requestNotificationAccess()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-black transition-all">
+                تفعيل الإشعارات
+            </button>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 1: REPORTS FEED (قائمة البلاغات لجميع السيارات) -->
+        <!-- ============================================== -->
+        <section id="tab-reports" class="tab-content block">
+            
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-3 gap-2.5 mb-3">
+                <div class="bg-slate-900/80 border border-slate-800 p-2.5 rounded-2xl text-center">
+                    <span class="text-[10px] text-slate-400 font-semibold block">إجمالي البلاغات</span>
+                    <span id="stat-total" class="text-lg font-black text-white font-mono">0</span>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 p-2.5 rounded-2xl text-center">
+                    <span class="text-[10px] text-rose-400 font-semibold block">جديدة</span>
+                    <span id="stat-new" class="text-lg font-black text-rose-400 font-mono">0</span>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 p-2.5 rounded-2xl text-center">
+                    <span class="text-[10px] text-emerald-400 font-semibold block">تم حلها</span>
+                    <span id="stat-resolved" class="text-lg font-black text-emerald-400 font-mono">0</span>
+                </div>
+            </div>
+
+            <!-- Car Filter Bar (فلترة حسب السيارة) -->
+            <div id="car-filter-bar" class="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 no-scrollbar"></div>
+
+            <!-- Status Filter Chips -->
+            <div class="flex items-center gap-1.5 mb-3 bg-slate-900 p-1 rounded-2xl border border-slate-800 text-xs">
+                <button type="button" onclick="setFilter('all', this)" class="filter-chip active flex-1 py-1.5 rounded-xl font-bold transition-all text-center">الكل</button>
+                <button type="button" onclick="setFilter('new', this)" class="filter-chip flex-1 py-1.5 rounded-xl font-bold transition-all text-center text-slate-400 hover:text-white">جديدة 🔴</button>
+                <button type="button" onclick="setFilter('resolved', this)" class="filter-chip flex-1 py-1.5 rounded-xl font-bold transition-all text-center text-slate-400 hover:text-white">تم الحل ✅</button>
+            </div>
+
+            <!-- Reports List Feed -->
+            <div id="reports-list" class="space-y-2.5">
+                <div class="text-center py-12 text-slate-500">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-emerald-400"></i>
+                    <p class="text-xs">جاري تحميل البلاغات...</p>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden text-center py-14 px-4">
+                <div class="w-16 h-16 rounded-3xl bg-slate-900 border border-slate-800 text-slate-600 flex items-center justify-center text-2xl mx-auto mb-3">
+                    <i class="fa-solid fa-shield-halved text-emerald-500/40"></i>
+                </div>
+                <h3 class="text-sm font-bold text-slate-300">لا توجد بلاغات هنا</h3>
+                <p class="text-xs text-slate-500 mt-1 max-w-xs mx-auto">سياراتك بأمان! أي تنبيه يسجله شخص في الشارع لأي سيارة سيظهر هنا فوراً.</p>
+            </div>
+        </section>
+
+
+        <!-- ============================================== -->
+        <!-- TAB 2: MY CARS & STICKERS (إدارة السيارات والصور والباركود) -->
+        <!-- ============================================== -->
+        <section id="tab-cars" class="tab-content hidden">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h2 class="text-base font-black text-white flex items-center gap-1.5">
+                        <i class="fa-solid fa-car-rear text-emerald-400"></i>
+                        سياراتي والباركود
+                    </h2>
+                    <p class="text-[11px] text-slate-400">تحكم في صورة السيارة، شكلها، لونها، والـ ID العشوائي</p>
+                </div>
+                <button onclick="openCarEditModal(null)" class="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-md shadow-emerald-500/10 transition-all">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>سيارة جديدة</span>
+                </button>
+            </div>
+
+            <!-- Cars Cards Container -->
+            <div id="cars-list-container" class="space-y-3"></div>
+        </section>
+
+
+        <!-- ============================================== -->
+        <!-- TAB 3: SITE DESIGN & ISSUES ORDER (التحكم في شكل الموقع وترتيب المشاكل) -->
+        <!-- ============================================== -->
+        <section id="tab-customizer" class="tab-content hidden space-y-4">
+            <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 space-y-4">
+                <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-black text-white flex items-center gap-1.5">
+                            <i class="fa-solid fa-wand-magic-sparkles text-emerald-400"></i>
+                            التحكم في شكل ومحتوى موقع الناس
+                        </h2>
+                        <p class="text-[10px] text-slate-400 mt-0.5">أي تعديل تحفظه هنا يتغير فوراً على موقع الشارع</p>
+                    </div>
+                    <button onclick="saveSiteCustomizer()" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-md transition-all flex items-center gap-1">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>حفظ الكل</span>
+                    </button>
+                </div>
+
+                <!-- 1. Theme & Layout -->
+                <div class="space-y-2.5">
+                    <label class="block text-xs font-bold text-emerald-400">1. مظهر وتقسيمة الموقع:</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="selectSiteTheme('dark')" id="theme-opt-dark" class="site-theme-btn p-2 rounded-xl border border-emerald-500 bg-slate-950 text-xs font-bold text-white flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-moon text-indigo-400"></i>
+                            <span>داكن فخم</span>
+                        </button>
+                        <button type="button" onclick="selectSiteTheme('light')" id="theme-opt-light" class="site-theme-btn p-2 rounded-xl border border-slate-800 bg-slate-950 text-xs font-bold text-slate-400 flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-sun text-amber-400"></i>
+                            <span>فاتح أبيض</span>
+                        </button>
+                        <button type="button" onclick="selectSiteTheme('black')" id="theme-opt-black" class="site-theme-btn p-2 rounded-xl border border-slate-800 bg-slate-950 text-xs font-bold text-slate-400 flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-circle text-slate-200"></i>
+                            <span>أسود ملكي</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button type="button" onclick="selectGridCols(2)" id="grid-opt-2" class="grid-col-btn p-2 rounded-xl border border-emerald-500 bg-slate-950 text-xs font-bold text-white flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-table-cells-large"></i>
+                            <span>شبكة (عمودين)</span>
+                        </button>
+                        <button type="button" onclick="selectGridCols(1)" id="grid-opt-1" class="grid-col-btn p-2 rounded-xl border border-slate-800 bg-slate-950 text-xs font-bold text-slate-400 flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-list"></i>
+                            <span>قائمة (عمود واحد)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Site Titles & Headings -->
+                <div class="space-y-2.5 border-t border-slate-800 pt-3">
+                    <label class="block text-xs font-bold text-emerald-400">2. العناوين والنصوص في الموقع:</label>
+                    
+                    <div>
+                        <span class="text-[11px] text-slate-300 block mb-1">العنوان الرئيسي أعلى الموقع:</span>
+                        <input type="text" id="cust-main-title" placeholder="تنبيه مالك السيارة" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 outline-none">
+                    </div>
+
+                    <div>
+                        <span class="text-[11px] text-slate-300 block mb-1">النص الترحيبي الفرعي:</span>
+                        <input type="text" id="cust-sub-title" placeholder="شكراً لاهتمامك وحرصك على المساعدة" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 outline-none">
+                    </div>
+
+                    <div>
+                        <span class="text-[11px] text-slate-300 block mb-1">عنوان قائمة المشاكل:</span>
+                        <input type="text" id="cust-issues-label" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <span class="text-[11px] text-slate-300 block mb-1">نص زر الإرسال:</span>
+                            <input type="text" id="cust-submit-text" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 outline-none">
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-slate-300 block mb-1">عنوان رسالة النجاح:</span>
+                            <input type="text" id="cust-success-title" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 outline-none">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1 text-xs">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="cust-show-note" checked class="w-4 h-4 accent-emerald-500">
+                            <span>إظهار حقل الملاحظات</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="cust-show-phone" checked class="w-4 h-4 accent-emerald-500">
+                            <span>إظهار حقل رقم الهاتف</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3. Issues List & Ordering -->
+                <div class="space-y-2.5 border-t border-slate-800 pt-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="block text-xs font-bold text-emerald-400">3. ترتيب وتعديل المشاكل في الموقع:</label>
+                            <span class="text-[10px] text-slate-400">استخدم الأسهم ⬆️⬇️ لتغيير ترتيب ظهور المشاكل للناس</span>
+                        </div>
+                        <button type="button" onclick="addNewIssueItem()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 text-[11px] font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>إضافة مشكلة</span>
+                        </button>
+                    </div>
+
+                    <div id="customizer-issues-list" class="space-y-2">
+                        <!-- Populated dynamically with Up/Down/Edit/Delete controls -->
+                    </div>
+                </div>
+
+                <button type="button" onclick="saveSiteCustomizer()" class="w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-lg transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>حفظ وتحديث شكل الموقع الآن</span>
+                </button>
+            </div>
+        </section>
+
+
+        <!-- ============================================== -->
+        <!-- TAB 4: SETTINGS (الإعدادات)                     -->
+        <!-- ============================================== -->
+        <section id="tab-settings" class="tab-content hidden">
+            <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-4">
+                <h2 class="text-base font-bold text-white flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders text-emerald-400"></i>
+                    إعدادات التطبيق
+                </h2>
+
+                <!-- Notification Audio Toggle -->
+                <div class="flex items-center justify-between p-3 bg-slate-950 rounded-2xl border border-slate-800">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </span>
+                        <div>
+                            <span class="text-xs font-bold text-white block">صوت التنبيه اللحظي</span>
+                            <span class="text-[10px] text-slate-400">تشغيل نغمة صوتية فور وصول بلاغ جديد</span>
+                        </div>
+                    </div>
+                    <input type="checkbox" id="setting-sound" checked class="w-4 h-4 accent-emerald-500 cursor-pointer">
+                </div>
+
+                <!-- Background Push Notifications Setup (FCM) -->
+                <div class="p-4 bg-slate-950 rounded-2xl border border-emerald-500/30 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-bell text-emerald-400 text-sm"></i>
+                            <span class="text-xs font-black text-white">إشعارات الخلفية (والتطبيق مغلق)</span>
+                        </div>
+                        <span id="bg-push-status-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-bold">غير مفعل</span>
+                    </div>
+
+                    <p class="text-[10px] text-slate-400 leading-relaxed">
+                        لتصلك إشعارات الموبايل حتى والتطبيق مقفول تماماً (عبر Firebase Cloud Messaging المجاني):
+                    </p>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-300 mb-1">1. مفتاح الـ Web Push (VAPID Key):</label>
+                        <input type="text" id="setting-vapid-key" dir="ltr" placeholder="انسخ الـ Key pair من Cloud Messaging" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-[11px] text-white font-mono outline-none focus:border-emerald-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-300 mb-1">2. ملف مفتاح الخدمة (Service Account JSON):</label>
+                        <label class="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 cursor-pointer flex items-center justify-center gap-2 transition-all">
+                            <i class="fa-solid fa-file-code text-emerald-400"></i>
+                            <span id="service-json-label">اختيار ملف الـ JSON من جهازك</span>
+                            <input type="file" id="setting-service-json" accept=".json,application/json" onchange="handleServiceAccountUpload(event)" class="sr-only">
+                        </label>
+                    </div>
+
+                    <button type="button" onclick="activateBackgroundPush()" id="btn-activate-bg-push" class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-md transition-all flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                        <span>حفظ وتفعيل إشعارات الخلفية لهذا الموبايل</span>
+                    </button>
+                </div>
+
+                <!-- Base Public Web URL -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">
+                        الرابط الأساسي لموقع الشارع (يتحدد تلقائياً من رابط موقعك):
+                    </label>
+                    <input type="url" id="config-github-url" dir="ltr" value="" placeholder="يتحدد تلقائياً من رابط موقعك" onchange="saveBaseUrlSetting()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:border-emerald-500 outline-none">
+                </div>
+
+                <!-- Database Status Info -->
+                <div class="p-3 bg-slate-950/60 rounded-2xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                    <span class="font-bold text-white block mb-1">حالة قاعدة البيانات والحساب:</span>
+                    <p id="db-status-desc">جاري الفحص...</p>
+                    <p id="owner-account-desc" class="text-emerald-400 font-mono text-[10px] pt-1"></p>
+                </div>
+
+                <!-- Clear Data & Logout Buttons -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="clearAllReports()" class="py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold rounded-xl transition-all">
+                        <i class="fa-solid fa-trash-can ml-1"></i> مسح البلاغات
+                    </button>
+                    <button onclick="handleOwnerLogout()" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold rounded-xl transition-all">
+                        <i class="fa-solid fa-right-from-bracket ml-1"></i> تسجيل الخروج
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+
+    <!-- ============================================== -->
+    <!-- MODAL 1: REPORT DETAIL (شاشة تفاصيل البلاغ)     -->
+    <!-- ============================================== -->
+    <div id="detail-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div id="detail-card" class="bg-slate-900 border border-slate-800 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 max-h-[90vh] overflow-y-auto transform translate-y-full sm:translate-y-0 transition-transform duration-300">
+            
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <span id="detail-car-icon" class="w-11 h-11 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-xl overflow-hidden">
+                        <i class="fa-solid fa-car-side"></i>
+                    </span>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span id="detail-status-badge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                                بلاغ جديد
+                            </span>
+                            <span id="detail-car-name-badge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-800 text-slate-200 border border-slate-700">
+                                السيارة الأولى
+                            </span>
+                        </div>
+                        <h3 id="detail-title" class="text-sm font-bold text-white mt-1">تفاصيل المشكلة</h3>
+                    </div>
+                </div>
+                <button onclick="closeDetailModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <span class="text-[11px] text-slate-400 block font-semibold mb-1.5">المشاكل المحددة:</span>
+                <div id="detail-issues-container" class="flex flex-wrap gap-1.5"></div>
+            </div>
+
+            <div class="mb-4 bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+                <span class="text-[11px] text-slate-400 block font-semibold mb-1">الملاحظة المكتوبة:</span>
+                <p id="detail-note" class="text-xs text-slate-200 leading-relaxed break-words">لا توجد ملاحظة إضافية.</p>
+            </div>
+
+            <div id="detail-contact-section" class="mb-5 bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+                <span class="text-[11px] text-slate-400 block font-semibold mb-1.5">رقم هاتف الراسل:</span>
+                <div class="flex items-center justify-between">
+                    <span id="detail-phone-text" class="text-xs font-mono font-bold text-white" dir="ltr">--</span>
+                    <div class="flex gap-2">
+                        <a id="btn-call-reporter" href="#" class="px-3 py-1.5 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 text-xs font-bold flex items-center gap-1 transition-all">
+                            <i class="fa-solid fa-phone"></i>
+                            <span>اتصال</span>
+                        </a>
+                        <a id="btn-whatsapp-reporter" target="_blank" href="#" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-xs font-bold flex items-center gap-1 transition-all">
+                            <i class="fa-brands fa-whatsapp"></i>
+                            <span>واتساب</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800 pt-3 mb-5">
+                <span id="detail-time">التوقيت: --</span>
+                <span id="detail-plate" class="font-mono font-bold text-white">اللوحة: --</span>
+            </div>
+
+            <div class="space-y-2">
+                <button id="btn-toggle-status" onclick="toggleCurrentReportStatus()" class="w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-md transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-check"></i>
+                    <span id="btn-toggle-status-text">تحديد كـ "تم الحل"</span>
+                </button>
+                <button onclick="deleteCurrentReport()" class="w-full py-2.5 rounded-2xl bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>حذف هذا البلاغ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ============================================== -->
+    <!-- MODAL 2: CAR EDIT / ADD MODAL (تعديل بيانات وصورة وشكل ولون السيارة والـ ID) -->
+    <!-- ============================================== -->
+    <div id="car-edit-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center hidden">
+        <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 max-h-[92vh] overflow-y-auto">
+            
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+                <h3 id="car-modal-title" class="text-sm font-black text-white flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-emerald-400"></i>
+                    <span>بيانات السيارة وصورتها وشكلها</span>
+                </h3>
+                <button onclick="closeCarEditModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Live Car Photo / Icon Preview (Matches Mockup Layout) -->
+            <div class="flex flex-col items-center justify-center bg-slate-950 border border-slate-800 rounded-2xl p-4 mb-4 text-center">
+                <div id="preview-car-photo-box" class="hidden max-w-[200px] mb-2">
+                    <img id="preview-car-photo-img" src="" alt="Car" class="w-full max-h-28 object-contain mx-auto drop-shadow-lg">
+                </div>
+                <div id="preview-car-icon-box" style="background-color: #10B981; box-shadow: 0 8px 20px -4px rgba(16,185,129,0.5);" class="w-16 h-16 rounded-2xl text-slate-950 flex items-center justify-center text-3xl mb-2 transition-all duration-300">
+                    <i id="preview-car-icon-el" class="fa-solid fa-car-side"></i>
+                </div>
+                <span id="preview-car-name" class="text-base font-extrabold text-white">اسم نوع العربية</span>
+                <span id="preview-car-plate" class="text-sm font-mono font-bold text-white mt-0.5">أ ب ج 1234</span>
+                <span id="preview-car-color-name" class="text-xs font-semibold text-slate-300 mt-0.5">فضي</span>
+            </div>
+
+            <div class="space-y-3.5">
+                <input type="hidden" id="edit-car-original-id">
+
+                <!-- 8-Char Random Car ID -->
+                <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                    <label class="block text-[11px] font-bold text-slate-300 mb-1 flex items-center justify-between">
+                        <span><i class="fa-solid fa-fingerprint text-emerald-400 ml-1"></i> كود الـ ID العشوائي للسيارة (8 خانات):</span>
+                        <button type="button" onclick="regenerateModalCarId()" class="text-[10px] text-emerald-400 hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-dice"></i>
+                            <span>توليد ID جديد</span>
+                        </button>
+                    </label>
+                    <input type="text" id="edit-car-id" maxlength="8" dir="ltr" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-center font-mono font-bold text-emerald-400 tracking-widest uppercase outline-none">
+                </div>
+
+                <!-- Upload Car Photo -->
+                <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                    <label class="block text-xs font-bold text-slate-300 mb-2">
+                        <i class="fa-solid fa-camera text-emerald-400 ml-1"></i> صورة العربية (تظهر في أعلى موقع الناس وفي الاستيكر):
+                    </label>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <label class="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-white cursor-pointer flex items-center justify-center gap-1.5 transition-all">
+                            <i class="fa-solid fa-upload text-emerald-400"></i>
+                            <span>اختيار صورة من الموبايل</span>
+                            <input type="file" id="edit-car-image-input" accept="image/*" onchange="handleCarImageUpload(event)" class="sr-only">
+                        </label>
+                        <button type="button" id="btn-remove-bg-image" onclick="removeCarImageBackground()" class="hidden px-3 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>تفريغ الخلفية</span>
+                        </button>
+                        <button type="button" id="btn-clear-car-image" onclick="clearCarImage()" class="hidden px-3 py-2 rounded-xl bg-rose-500/20 text-rose-400 text-xs font-bold">
+                            حذف
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 1. اسم نوع العربية -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">
+                        <i class="fa-solid fa-car text-emerald-400 ml-1"></i> اسم نوع العربية:
+                    </label>
+                    <input type="text" id="edit-car-name" oninput="updateCarPreview()" placeholder="مثال: ميتسوبيشي لانسر / نيسان صني" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-emerald-500 outline-none">
+                </div>
+
+                <!-- 2. رقم العربية & 3. لونها -->
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">
+                            <i class="fa-solid fa-id-card text-blue-400 ml-1"></i> رقم العربية:
+                        </label>
+                        <input type="text" id="edit-car-plate" oninput="updateCarPreview()" placeholder="مثال: أ ب ج 1234" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">
+                            <i class="fa-solid fa-droplet text-amber-400 ml-1"></i> لون العربية (يتغير الثيم تلقائياً):
+                        </label>
+                        <input type="text" id="edit-car-color-name" oninput="handleCarColorNameInput(this.value)" placeholder="مثال: أحمر / فضي / أسود / أزرق" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-emerald-500 outline-none">
+                    </div>
+                </div>
+
+                <!-- Car Shape Selector -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1.5">
+                        <i class="fa-solid fa-car text-cyan-400 ml-1"></i> شعار / أيقونة السيارة في الاستيكر والموقع:
+                    </label>
+                    <div class="grid grid-cols-6 gap-2">
+                        <button type="button" onclick="selectCarIconShape('brand-mitsubishi')" class="car-shape-btn p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-lg text-white hover:border-emerald-500 flex items-center justify-center" title="شعار ميتسوبيشي">
+                            <svg class="w-5 h-5 fill-current" viewBox="0 0 200 180"><polygon points="100,11 130,63 100,115 70,63"/><polygon points="100,115 40,115 10,167 70,167"/><polygon points="100,115 160,115 190,167 130,167"/></svg>
+                        </button>
+                        <button type="button" onclick="selectCarIconShape('fa-car-side')" class="car-shape-btn p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-lg text-white hover:border-emerald-500 flex items-center justify-center">
+                            <i class="fa-solid fa-car-side"></i>
+                        </button>
+                        <button type="button" onclick="selectCarIconShape('fa-car')" class="car-shape-btn p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-lg text-white hover:border-emerald-500 flex items-center justify-center">
+                            <i class="fa-solid fa-car"></i>
+                        </button>
+                        <button type="button" onclick="selectCarIconShape('fa-truck-pickup')" class="car-shape-btn p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-lg text-white hover:border-emerald-500 flex items-center justify-center">
+                            <i class="fa-solid fa-truck-pickup"></i>
+                        </button>
+                        <button type="button" onclick="selectCarIconShape('fa-van-shuttle')" class="car-shape-btn p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-lg text-white hover:border-emerald-500 flex items-center justify-center">
+                            <i class="fa-solid fa-van-shuttle"></i>
+                        </button>
+                        <button type="button" onclick="selectCarIconShape('fa-car-rear')" class="car-shape-btn p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-lg text-white hover:border-emerald-500 flex items-center justify-center">
+                            <i class="fa-solid fa-car-rear"></i>
+                        </button>
+                    </div>
+                    <input type="hidden" id="edit-car-icon" value="brand-mitsubishi">
+                </div>
+
+                <!-- Car Icon Color Picker -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-2">
+                        <i class="fa-solid fa-palette text-pink-400 ml-1"></i> لون ثيم العربية والاستيكر (يتحدد حسب لون عربيتك):
+                    </label>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button type="button" onclick="selectCarColor('#E31E24')" style="background-color: #E31E24;" title="أحمر" class="color-swatch w-8 h-8 rounded-xl border-2 border-white/20 hover:scale-110 transition-transform"></button>
+                        <button type="button" onclick="selectCarColor('#2563EB')" style="background-color: #2563EB;" title="أزرق" class="color-swatch w-8 h-8 rounded-xl border-2 border-white/20 hover:scale-110 transition-transform"></button>
+                        <button type="button" onclick="selectCarColor('#10B981')" style="background-color: #10B981;" title="أخضر" class="color-swatch w-8 h-8 rounded-xl border-2 border-white/20 hover:scale-110 transition-transform"></button>
+                        <button type="button" onclick="selectCarColor('#475569')" style="background-color: #475569;" title="فضي / رمادي" class="color-swatch w-8 h-8 rounded-xl border-2 border-white/20 hover:scale-110 transition-transform"></button>
+                        <button type="button" onclick="selectCarColor('#18181B')" style="background-color: #18181B;" title="أسود" class="color-swatch w-8 h-8 rounded-xl border-2 border-white/40 hover:scale-110 transition-transform"></button>
+                        <button type="button" onclick="selectCarColor('#D97706')" style="background-color: #D97706;" title="ذهبي / أصفر" class="color-swatch w-8 h-8 rounded-xl border-2 border-white/20 hover:scale-110 transition-transform"></button>
+                        <button type="button" onclick="selectCarColor('#991B1B')" style="background-color: #991B1B;" title="نبيتي" class="color-swatch w-8 h-8 rounded-xl border-2 border-white/20 hover:scale-110 transition-transform"></button>
+                        <button type="button" onclick="selectCarColor('#7C3AED')" style="background-color: #7C3AED;" title="بنفسجي" class="color-swatch w-8 h-8 rounded-xl border-2 border-white/20 hover:scale-110 transition-transform"></button>
+                        <label class="w-8 h-8 rounded-xl border-2 border-dashed border-slate-500 flex items-center justify-center cursor-pointer hover:border-white" title="لون مخصص">
+                            <i class="fa-solid fa-eye-dropper text-xs text-slate-300"></i>
+                            <input type="color" id="edit-car-color" value="#E31E24" oninput="selectCarColor(this.value)" class="sr-only">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Custom Subtitle -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">
+                        <i class="fa-solid fa-comment text-amber-400 ml-1"></i> رسالة ترحيب خاصة بهذه السيارة (اختياري):
+                    </label>
+                    <input type="text" id="edit-car-subtitle" placeholder="شكراً لاهتمامك وحرصك على المساعدة" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:border-emerald-500 outline-none">
+                </div>
+
+                <!-- Save & Delete Actions -->
+                <div class="pt-3 space-y-2">
+                    <button type="button" onclick="saveCarFromModal()" class="w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-lg transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>حفظ بيانات السيارة وتحديث الموقع فوراً</span>
+                    </button>
+                    <button type="button" id="btn-delete-car" onclick="deleteCarFromModal()" class="hidden w-full py-2.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold transition-all">
+                        <i class="fa-solid fa-trash-can ml-1"></i> حذف هذه السيارة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ============================================== -->
+    <!-- MODAL 3: QR STICKER MODAL (بالتصميم الجديد مع ثيم لون العربية) -->
+    <!-- ============================================== -->
+    <div id="qr-sticker-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-5 text-center relative my-auto">
+            <button onclick="closeQRModal()" class="no-print absolute left-4 top-4 w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <h3 class="no-print text-sm font-black text-white mb-0.5">استيكر باركود السيارة</h3>
+            <p class="no-print text-[11px] text-slate-400 mb-3">يتلون تلقائياً بثيم لون عربيتك وجاهز للطباعة أو التحميل</p>
+
+            <!-- ========================================================= -->
+            <!-- PRINTABLE STICKER CARD (Exact Design from Uploaded Image) -->
+            <!-- ========================================================= -->
+            <div id="owner-sticker-card" style="border-color: #848688;" class="bg-white text-black px-6 pt-7 pb-6 rounded-[52px] shadow-2xl mx-auto border-[12px] w-full max-w-[310px] select-none">
+                
+                <!-- Top Section: Left Brand Logo + Right ("بلغني" + "العربية فيها مشكلة؟") -->
+                <div dir="ltr" class="flex items-center justify-between gap-2 mb-4 px-1">
+                    <!-- Left: Car Brand Logo / Icon (Colored by Car Theme) -->
+                    <div id="sticker-car-visual-box" style="color: #E31E24;" class="w-24 h-20 flex items-center justify-center overflow-hidden bg-transparent flex-shrink-0">
+                        <!-- Dynamically filled with Mitsubishi SVG Logo, Car Icon, or Photo -->
+                    </div>
+
+                    <!-- Right: "بلغني" (in Car Theme Color) + "العربية فيها مشكلة؟" (Black) -->
+                    <div dir="rtl" class="flex-1 text-center">
+                        <div id="sticker-title-belaghni" style="color: #E31E24;" class="font-black text-[42px] leading-none tracking-tight mb-2">بلغني</div>
+                        <div id="sticker-top-ar" class="font-extrabold text-[15px] text-black leading-tight whitespace-nowrap">العربية فيها مشكلة؟</div>
+                    </div>
+                </div>
+
+                <!-- Middle Section: Square QR Code Frame in Car Theme Color -->
+                <div id="sticker-qr-frame" style="border-color: #E31E24;" class="w-[214px] h-[214px] border-[8px] mx-auto my-2 flex items-center justify-center p-2.5 bg-white">
+                    <div id="qrcode-box" class="flex justify-center items-center"></div>
+                </div>
+
+                <!-- Bottom Section: "امسح الQR Code" -->
+                <div dir="rtl" class="text-center mt-4">
+                    <div id="sticker-bottom-ar" class="font-extrabold text-[27px] text-black leading-none tracking-tight">امسح الQR Code</div>
+                </div>
+
+            </div>
+
+            <!-- Quick Theme Color & Logo Mode Switcher inside Sticker Modal -->
+            <div class="no-print mt-3.5 bg-slate-950 border border-slate-800 rounded-2xl p-3 space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-slate-300">لون ثيم الاستيكر (حسب لون العربية):</span>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="changeStickerThemeColor('#E31E24')" style="background-color: #E31E24;" title="أحمر" class="w-5 h-5 rounded-full border border-white/30 hover:scale-110 transition-transform"></button>
+                        <button type="button" onclick="changeStickerThemeColor('#2563EB')" style="background-color: #2563EB;" title="أزرق" class="w-5 h-5 rounded-full border border-white/30 hover:scale-110 transition-transform"></button>
+                        <button type="button" onclick="changeStickerThemeColor('#10B981')" style="background-color: #10B981;" title="أخضر" class="w-5 h-5 rounded-full border border-white/30 hover:scale-110 transition-transform"></button>
+                        <button type="button" onclick="changeStickerThemeColor('#475569')" style="background-color: #475569;" title="فضي / رمادي" class="w-5 h-5 rounded-full border border-white/30 hover:scale-110 transition-transform"></button>
+                        <button type="button" onclick="changeStickerThemeColor('#18181B')" style="background-color: #18181B;" title="أسود" class="w-5 h-5 rounded-full border border-white/50 hover:scale-110 transition-transform"></button>
+                        <button type="button" onclick="changeStickerThemeColor('#D97706')" style="background-color: #D97706;" title="ذهبي" class="w-5 h-5 rounded-full border border-white/30 hover:scale-110 transition-transform"></button>
+                        <button type="button" onclick="changeStickerThemeColor('#991B1B')" style="background-color: #991B1B;" title="نبيتي" class="w-5 h-5 rounded-full border border-white/30 hover:scale-110 transition-transform"></button>
+                        <label class="w-5 h-5 rounded-full border border-dashed border-slate-400 flex items-center justify-center cursor-pointer" title="لون مخصص">
+                            <i class="fa-solid fa-palette text-[9px] text-slate-300"></i>
+                            <input type="color" id="sticker-custom-color" oninput="changeStickerThemeColor(this.value)" class="sr-only">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between border-t border-slate-800/80 pt-2">
+                    <span class="text-[11px] font-bold text-slate-300">الشعار أعلى اليسار:</span>
+                    <div class="flex items-center gap-1">
+                        <button type="button" id="sticker-logo-btn-mitsubishi" onclick="setStickerLogoMode('mitsubishi')" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold">شعار ميتسوبيشي</button>
+                        <button type="button" id="sticker-logo-btn-icon" onclick="setStickerLogoMode('icon')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-bold">أيقونة سيارة</button>
+                        <button type="button" id="sticker-logo-btn-photo" onclick="setStickerLogoMode('photo')" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-bold">صورة العربية</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="no-print mt-3 grid grid-cols-2 gap-2">
+                <button onclick="downloadStickerAsPNG()" class="py-2.5 px-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-download"></i>
+                    <span>تحميل صورة (PNG)</span>
+                </button>
+                <button onclick="window.print()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-print text-emerald-400"></i>
+                    <span>طباعة مباشرة</span>
+                </button>
+            </div>
+            <button onclick="copyActiveQRLink()" class="no-print mt-2 w-full py-2 bg-slate-950 hover:bg-slate-800 text-slate-300 text-[11px] font-bold rounded-xl border border-slate-800 transition-all">
+                <i class="fa-solid fa-copy ml-1 text-emerald-400"></i> نسخ لينك السيارة
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ============================================== -->
+    <!-- BOTTOM NAVIGATION BAR (شريط التنقل السفلي - 4 تبويبات) -->
+    <!-- ============================================== -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 py-2 z-40">
+        <div class="max-w-md mx-auto grid grid-cols-4 text-center">
+            <button onclick="switchTab('reports')" id="nav-tab-reports" class="bottom-nav-btn active flex flex-col items-center justify-center text-emerald-400 font-bold transition-all py-1">
+                <i class="fa-solid fa-clipboard-list text-base"></i>
+                <span class="text-[10px] mt-0.5">البلاغات</span>
+            </button>
+            <button onclick="switchTab('cars')" id="nav-tab-cars" class="bottom-nav-btn flex flex-col items-center justify-center text-slate-400 hover:text-white font-medium transition-all py-1">
+                <i class="fa-solid fa-car-rear text-base"></i>
+                <span class="text-[10px] mt-0.5">سياراتي</span>
+            </button>
+            <button onclick="switchTab('customizer')" id="nav-tab-customizer" class="bottom-nav-btn flex flex-col items-center justify-center text-slate-400 hover:text-white font-medium transition-all py-1">
+                <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
+                <span class="text-[10px] mt-0.5">شكل الموقع</span>
+            </button>
+            <button onclick="switchTab('settings')" id="nav-tab-settings" class="bottom-nav-btn flex flex-col items-center justify-center text-slate-400 hover:text-white font-medium transition-all py-1">
+                <i class="fa-solid fa-gear text-base"></i>
+                <span class="text-[10px] mt-0.5">الإعدادات</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Scripts -->
+    <script src="../firebase-keys.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
