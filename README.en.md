@@ -119,8 +119,12 @@ service cloud.firestore {
 
 ---
 
-## Optional: Enabling Background Push Notifications (When App is Closed)
-To receive mobile notifications even when the app is completely closed:
-1. In Firebase Console -> **Project Settings** -> **Cloud Messaging** tab -> under **Web configuration**, click **Generate key pair** and copy the **VAPID Key**.
-2. In **Project Settings** -> **Service accounts** tab -> click **Generate new private key** to download the `.json` file.
-3. Open your Owner App (`/app/`) -> go to the **"الإعدادات" (Settings)** tab -> paste the **VAPID Key**, select the downloaded **`.json` file**, and tap **"حفظ وتفعيل إشعارات الخلفية لهذا الموبايل"**.
+### Step 5: Enable Background Push Notifications (When App is Closed)
+To receive instant mobile notifications even when the app is completely closed:
+1. In **Firebase Console**, open **Project Settings** and go to the **Cloud Messaging** tab.
+2. Scroll down to the **Web configuration** section, click **Generate key pair**, and copy the generated **VAPID Key**.
+3. Still in **Project Settings**, switch to the **Service accounts** tab and click **Generate new private key** -> **Generate key** to download the `.json` file to your device.
+4. Open your Owner App (`/app/`), go to the **"الإعدادات" (Settings)** tab, and under the background notifications section:
+   * Paste the **VAPID Key** into the first field.
+   * Tap **"اختيار ملف .json"** and select the downloaded `.json` file (or paste its contents).
+   * Tap **"حفظ وتفعيل إشعارات الخلفية لهذا الموبايل" (Save & Enable Background Notifications for This Phone)** and allow notification permissions in your browser.
