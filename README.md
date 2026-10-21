@@ -13,8 +13,19 @@
 
 ### الخطوة 1: إنشاء قاعدة بياناتك الخاصة على Firebase
 1. افتح موقع **[Firebase Console](https://console.firebase.google.com/)** بحساب الجيميل الخاص بك واضغط **Create a project**.
+<img width="1300" height="537" alt="1" src="https://github.com/user-attachments/assets/6ffd8122-e835-46a6-b3c5-28158b6ebf15" />
+<img width="1539" height="800" alt="2" src="https://github.com/user-attachments/assets/ad98c0bb-5f63-409e-a8c6-689e0e44dea8" />
+<img width="772" height="610" alt="3" src="https://github.com/user-attachments/assets/d3331ce0-4ee2-4350-a959-6a3efa722a49" />
+
 2. من القائمة الجانبية، اختر **Build** ⬅️ **Authentication** ⬅️ اضغط **Get started** ⬅️ اختر **Email/Password** وفعّل أول خيار (**Enable**) ثم اضغط **Save**.
+<img width="523" height="478" alt="4" src="https://github.com/user-attachments/assets/a2d09f31-67b3-4538-b590-76a4fb4e39d0" />
+<img width="1281" height="552" alt="6" src="https://github.com/user-attachments/assets/33a3b34d-892e-43d9-b9a6-72383591bae3" />
+<img width="1281" height="552" alt="7" src="https://github.com/user-attachments/assets/598a7517-1cac-426e-8be5-93f3266df3a9" />
+
 3. من القائمة الجانبية، اختر **Build** ⬅️ **Firestore Database** ⬅️ اضغط **Create database** ⬅️ اختر **Start in production mode** ثم **Create**.
+<img width="1036" height="592" alt="8" src="https://github.com/user-attachments/assets/3e8b60c5-f4c9-480e-b575-4f292e8c3a9a" />
+<img width="844" height="1539" alt="9" src="https://github.com/user-attachments/assets/b9181b66-68f0-438f-b0fd-f0804e2a8546" />
+
 4. داخل صفحة **Firestore Database**، اضغط على تبويب **Rules** في الأعلى، وامسح الموجود والصق الكود التالي ثم اضغط **Publish**:
 
 ```javascript
@@ -53,6 +64,7 @@ service cloud.firestore {
   }
 }
 ```
+<img width="1575" height="880" alt="10" src="https://github.com/user-attachments/assets/354d4aa6-a6bc-45a0-a1aa-62beb6a373c0" />
 
 ---
 
