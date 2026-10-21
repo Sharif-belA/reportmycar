@@ -1,6 +1,7 @@
 # 🚗 Smart Car QR Alert System (Unified Single-Repo Template)
 
 > 🇸🇦 **للنسخة العربية:** راجع ملف [README.md](./README.md) أو القسم العربي.
+> 🟢 **Quick Start:** Click **[Use this template](https://github.com/Sharif-belA/reportmycar/generate)** at the top right to create your own independent copy in 1 click!
 
 This unified repository combines both parts of the **Smart Car QR Alert System** into a single project:
 1. **Public Street Reporter Website (`/`)**: Opens when someone on the street scans the QR code sticker on your car (`/?id=XXXXXXXX`).
