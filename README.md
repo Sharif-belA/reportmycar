@@ -1,4 +1,4 @@
-<img width="512" height="272" alt="image" src="https://github.com/user-attachments/assets/de27b8d1-6203-411c-ac78-2740227e9375" /><a id="ar"></a>
+<a id="ar"></a>
 <div align="center">
 
 # [EN](#-english-setup-guide--smart-car-qr-alert-system) / [AR](#ar)
