@@ -70,8 +70,14 @@ service cloud.firestore {
 
 ### الخطوة 2: نسخ مفاتيح Firebase ووضعها في ملف `firebase-keys.js`
 1. في إعدادات مشروعك على Firebase (**Project Settings** ⚙️)، انزل للأسفل واضغط على أيقونة الويب **`</>`** لتسجيل موقع جديد.
+<img width="1333" height="789" alt="11" src="https://github.com/user-attachments/assets/c7c906b6-6be8-400a-92f1-51119822c80a" />
+<img width="539" height="488" alt="12" src="https://github.com/user-attachments/assets/f0f528c2-cccd-4fc5-ba2d-e2cdb95e2308" />
+
 2. سيظهر لك كود بـ 6 أسطر اسمه `firebaseConfig`.
+<img width="630" height="654" alt="13" src="https://github.com/user-attachments/assets/be8385bb-27dd-4244-b549-301838e124cf" />
+
 3. افتح ملف **`firebase-keys.js`** الموجود في هذا الفولدر، وضع القيم الخاصة بمشروعك بداخله واحفظ الملف.
+<img width="941" height="933" alt="14" src="https://github.com/user-attachments/assets/64235983-5413-4443-88e7-1c3e130b4277" />
 
 ---
 
