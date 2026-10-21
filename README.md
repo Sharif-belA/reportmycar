@@ -84,16 +84,28 @@ service cloud.firestore {
 ### الخطوة 3: رفع المشروع على GitHub وربطه بـ Vercel
 1. ارفع هذا الفولدر بالكامل في مستودع (**Repository**) واحد على حسابك في **GitHub** (يمكنك جعله **Private 🔒**).
 2. ادخل على موقع **[Vercel.com](https://vercel.com)** بحساب GitHub الخاص بك.
+
+<img width="941" height="933" alt="15" src="https://github.com/user-attachments/assets/24c6f326-1ec0-4a19-bd13-87b8efa49836" />
+<img width="941" height="1249" alt="17" src="https://github.com/user-attachments/assets/2d2174d0-1ffb-49f5-9afb-a2fee7fbda41" />
+
 3. اضغط **Add New...** ⬅️ **Project** ⬅️ اختر المستودع واضغط **Deploy**.
+<img width="948" height="301" alt="18" src="https://github.com/user-attachments/assets/5942c4be-1b3b-4afc-8f46-dbcb5dce4940" />
+<img width="766" height="679" alt="19" src="https://github.com/user-attachments/assets/ab076ba7-9641-4c05-8b4c-b651f6a4220d" />
+<img width="738" height="800" alt="20" src="https://github.com/user-attachments/assets/9d72e5bc-dd8e-4cf7-a488-fd6b5c98a668" />
+
 4. سيعطيك Vercel رابط موقعك الموحد، مثلاً:
    * 🌐 **رابط الناس في الشارع:** `https://your-project.vercel.app/?id=XXXXXXXX`
    * 📱 **رابط تطبيق المالك للموبايل:** `https://your-project.vercel.app/app/`
+<img width="1028" height="471" alt="21" src="https://github.com/user-attachments/assets/2acad767-9f5d-4800-ae63-5b78e0881991" />
 
 ---
 
 ### الخطوة 4: فتح تطبيق المالك وإضافة سيارتك وطباعة الاستيكر
 1. افتح رابط تطبيقك من موبايلك: `https://your-project.vercel.app/app/`
 2. اكتب بريدك الإلكتروني وكلمة مرور من اختيارك واضغط **"إنشاء حساب المالك لأول مرة"** (سيتم قفل التطبيق على حسابك أنت فقط للأبد).
+<img width="532" height="556" alt="22" src="https://github.com/user-attachments/assets/1d2e630e-ad77-4582-b902-61060434caa6" />
+
+
 3. اضغط على زر **"تثبيت التطبيق"** ليظهر كأيقونة تطبيق على شاشة موبايلك.
 4. من تبويب **"🚗 سياراتي"**: عدّل اسم ولون ورقم وصورة سيارتك، ثم اضغط **"الاستيكر والباركود"** لتحميل أو طباعة استيكر سيارتك الملون بثيم عربيتك!
 
