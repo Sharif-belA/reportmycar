@@ -1,4 +1,4 @@
-<a id="ar"></a>
+<img width="512" height="272" alt="image" src="https://github.com/user-attachments/assets/de27b8d1-6203-411c-ac78-2740227e9375" /><a id="ar"></a>
 <div align="center">
 
 # [EN](#-english-setup-guide--smart-car-qr-alert-system) / [AR](#ar)
@@ -121,11 +121,17 @@ service cloud.firestore {
 لتصلك إشعارات فورية على موبايلك حتى لو كان التطبيق مغلقاً تماماً:
 1. في موقع **Firebase Console**، افتح إعدادات المشروع (**Project Settings**) ثم اضغط على تبويب **Cloud Messaging**.
 2. انزل لأسفل عند قسم **Web configuration** واضغط على زر **Generate key pair**، ثم انسخ الكود الطويل الذي سيظهر لك (**VAPID Key**).
+<img width="1843" height="910" alt="image" src="https://github.com/user-attachments/assets/7b386a4f-c111-45c7-b4d1-9b6983b55254" />
+<img width="971" height="302" alt="image" src="https://github.com/user-attachments/assets/8069cf2f-e111-40f2-a89c-f9efc5523a25" />
+
 3. في نفس صفحة **Project Settings**، انتقل إلى تبويب **Service accounts** ثم اضغط على زر **Generate new private key** ثم **Generate key** ليتم تحميل ملف `.json` على جهازك.
+<img width="1853" height="903" alt="image" src="https://github.com/user-attachments/assets/05edd6a3-1ca9-4523-a3d3-4b01a01cecc0" />
+
 4. افتح تطبيق المالك (`/app/`) وادخل إلى تبويب **"الإعدادات"** ثم في قسم **"تفعيل الإشعارات والتطبيق مغلق"**:
    * الصق كود **VAPID Key** في الخانة الأولى.
    * اضغط **"اختيار ملف .json"** واختر الملف الذي قمت بتحميله (أو الصق محتواه).
    * اضغط على زر **"حفظ وتفعيل إشعارات الخلفية لهذا الموبايل"** ووافق على إذن الإشعارات في المتصفح.
+<img width="1080" height="2128" alt="23" src="https://github.com/user-attachments/assets/b0127a56-69e3-42e0-9622-2a44a4dac8a8" />
 
 ---
 
@@ -134,8 +140,13 @@ service cloud.firestore {
 1. افتح صفحة مستودعك (**Repository**) على موقع **GitHub** ثم اضغط على تبويب **Settings** في الأعلى.
 2. انزل إلى آخر الصفحة تماماً عند قسم **Danger Zone**.
 3. اضغط على زر **Change visibility** ثم اختر **Change to private** ووافق على التأكيد لتحويل المستودع إلى خاص (**Private**).
+<img width="1544" height="860" alt="24" src="https://github.com/user-attachments/assets/8bbe5567-2fc3-4880-a133-2200e1d6b369" />
+<img width="480" height="247" alt="image" src="https://github.com/user-attachments/assets/78450bcb-8c2a-4dbf-9fd2-5249204b0555" />
+<img width="494" height="420" alt="image" src="https://github.com/user-attachments/assets/382b3074-00b0-46c9-943f-35558c90752b" />
+<img width="512" height="272" alt="image" src="https://github.com/user-attachments/assets/8998614d-0611-40b6-9e6a-ced2288e1d09" />
 
 ---
+
 ---
 
 <a id="-english-setup-guide--smart-car-qr-alert-system"></a>
@@ -258,11 +269,17 @@ service cloud.firestore {
 To receive instant mobile notifications even when the app is completely closed:
 1. In **Firebase Console**, open **Project Settings** and go to the **Cloud Messaging** tab.
 2. Scroll down to the **Web configuration** section, click **Generate key pair**, and copy the generated **VAPID Key**.
+<img width="1843" height="910" alt="image" src="https://github.com/user-attachments/assets/7b386a4f-c111-45c7-b4d1-9b6983b55254" />
+<img width="971" height="302" alt="image" src="https://github.com/user-attachments/assets/8069cf2f-e111-40f2-a89c-f9efc5523a25" />
+
 3. Still in **Project Settings**, switch to the **Service accounts** tab and click **Generate new private key** -> **Generate key** to download the `.json` file to your device.
+<img width="1853" height="903" alt="image" src="https://github.com/user-attachments/assets/05edd6a3-1ca9-4523-a3d3-4b01a01cecc0" />
+
 4. Open your Owner App (`/app/`), go to the **"الإعدادات" (Settings)** tab, and under the background notifications section:
    * Paste the **VAPID Key** into the first field.
    * Tap **"اختيار ملف .json"** and select the downloaded `.json` file (or paste its contents).
    * Tap **"حفظ وتفعيل إشعارات الخلفية لهذا الموبايل" (Save & Enable Background Notifications for This Phone)** and allow notification permissions in your browser.
+<img width="1080" height="2128" alt="23" src="https://github.com/user-attachments/assets/b0127a56-69e3-42e0-9622-2a44a4dac8a8" />
 
 ---
 
@@ -271,3 +288,8 @@ To protect your project files and database keys from public view on GitHub (whil
 1. Open your **Repository** page on **GitHub** and click the **Settings** tab at the top.
 2. Scroll all the way down to the bottom of the page to the **Danger Zone** section.
 3. Click **Change visibility** -> **Change to private** and confirm to lock your repository as **Private**.
+
+<img width="1544" height="860" alt="24" src="https://github.com/user-attachments/assets/8bbe5567-2fc3-4880-a133-2200e1d6b369" />
+<img width="480" height="247" alt="image" src="https://github.com/user-attachments/assets/78450bcb-8c2a-4dbf-9fd2-5249204b0555" />
+<img width="494" height="420" alt="image" src="https://github.com/user-attachments/assets/382b3074-00b0-46c9-943f-35558c90752b" />
+<img width="512" height="272" alt="image" src="https://github.com/user-attachments/assets/8998614d-0611-40b6-9e6a-ced2288e1d09" />
