@@ -128,6 +128,14 @@ service cloud.firestore {
    * اضغط على زر **"حفظ وتفعيل إشعارات الخلفية لهذا الموبايل"** ووافق على إذن الإشعارات في المتصفح.
 
 ---
+
+### الخطوة 6 (خطوة أمان): تحويل المستودع على GitHub إلى خاص (Private)
+لحماية ملفات مشروعك ومفاتيح قاعدة البيانات الخاصة بك بحيث لا يطلع عليها أي شخص على GitHub (مع بقاء موقعك وتطبيقك يعملان على Vercel بشكل طبيعي):
+1. افتح صفحة مستودعك (**Repository**) على موقع **GitHub** ثم اضغط على تبويب **Settings** في الأعلى.
+2. انزل إلى آخر الصفحة تماماً عند قسم **Danger Zone**.
+3. اضغط على زر **Change visibility** ثم اختر **Change to private** ووافق على التأكيد لتحويل المستودع إلى خاص (**Private**).
+
+---
 ---
 
 <a id="-english-setup-guide--smart-car-qr-alert-system"></a>
@@ -255,3 +263,11 @@ To receive instant mobile notifications even when the app is completely closed:
    * Paste the **VAPID Key** into the first field.
    * Tap **"اختيار ملف .json"** and select the downloaded `.json` file (or paste its contents).
    * Tap **"حفظ وتفعيل إشعارات الخلفية لهذا الموبايل" (Save & Enable Background Notifications for This Phone)** and allow notification permissions in your browser.
+
+---
+
+### Step 6 (Security Step): Make Your GitHub Repository Private
+To protect your project files and database keys from public view on GitHub (while your live website and mobile app on Vercel continue working normally):
+1. Open your **Repository** page on **GitHub** and click the **Settings** tab at the top.
+2. Scroll all the way down to the bottom of the page to the **Danger Zone** section.
+3. Click **Change visibility** -> **Change to private** and confirm to lock your repository as **Private**.
